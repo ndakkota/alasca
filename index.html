@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Puzzle Alasca!</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #000000, #1a1a1a); /* fundo preto elegante */
+      color: #FFD700; /* texto dourado */
+    }
+
+    h2 {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    #controles {
+      text-align: center;
+      margin: 20px;
+    }
+
+    button, select {
+      background: rgba(0, 0, 0, 0.4); /* efeito vidro escuro */
+      border: 1px solid rgba(255, 215, 0, 0.6); /* borda dourada */
+      color: #FFD700; /* texto dourado */
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 12px;
+      backdrop-filter: blur(10px); /* efeito glass */
+      -webkit-backdrop-filter: blur(10px);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 5px;
+    }
+
+    button:hover, select:hover {
+      background: rgba(255, 215, 0, 0.2);
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+    }
+
+    #referencia {
+      display: block;
+      margin: 10px auto;
+      border: 2px solid #FFD700;
+      max-width: 200px; /* controla tamanho da imagem de referência */
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    }
+
+    #puzzle {
+      display: grid;
+      gap: 2px;
+      margin: auto;
+      border: 2px solid #FFD700;
+    }
+
+    .piece {
+      cursor: grab;
+    }
+
+    #mensagem {
+      text-align: center;
+      font-size: 20px;
+      color: #FFD700;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Monte seu puzzle!</h2>
+  <div id="controles">
+    <label for="dificuldade">Dificuldade:</label>
+    <select id="dificuldade">
+      <option value="facil">Fácil</option>
+      <option value="medio">Médio</option>
+      <option value="dificil">Difícil</option>
+    </select>
+    <button id="reiniciar">Reiniciar</button>
+  </div>
+  <img id="referencia" src="nossa_foto.jpeg" alt="Imagem de referência">
+  <div id="puzzle"></div>
+  <div id="mensagem"></div>
+
+  <script>
+    const puzzle = document.getElementById("puzzle");
+    const mensagem = document.getElementById("mensagem");
+    const reiniciarBtn = document.getElementById("reiniciar");
+    const dificuldadeSelect = document.getElementById("dificuldade");
+    const referencia = document.getElementById("referencia");
+
+    function criarPuzzle() {
+      puzzle.innerHTML = "";
+      mensagem.textContent = "";
+
+      const dificuldade = dificuldadeSelect.value;
+      let tamanho = 100; // tamanho padrão das peças
+      let mostrarReferencia = true;
+
+      if (dificuldade === "medio") {
+        mostrarReferencia = false;
+      } else if (dificuldade === "dificil") {
+        mostrarReferencia = false;
+        tamanho = 80; // peças menores
+      }
+
+      referencia.style.display = mostrarReferencia ? "block" : "none";
+      referencia.style.maxWidth = mostrarReferencia ? "200px" : "0";
+
+      puzzle.style.gridTemplateColumns = `repeat(5, ${tamanho}px)`;
+      puzzle.style.gridTemplateRows = `repeat(5, ${tamanho}px)`;
+      puzzle.style.width = `${5 * tamanho + 10}px`;
+
+      const positions = [];
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 5; col++) {
+          positions.push(`-${col * tamanho}px -${row * tamanho}px`);
+        }
+      }
+
+      const shuffled = positions.slice().sort(() => Math.random() - 0.5);
+
+      shuffled.forEach((pos, index) => {
+        const piece = document.createElement("div");
+        piece.classList.add("piece");
+        piece.style.width = `${tamanho}px`;
+        piece.style.height = `${tamanho}px`;
+        piece.style.backgroundImage = "url('nossa_foto.jpeg')";
+        piece.style.backgroundSize = `${tamanho*5}px ${tamanho*5}px`;
+        piece.style.backgroundPosition = pos;
+        piece.draggable = true;
+        piece.dataset.correct = positions.indexOf(pos);
+        piece.dataset.index = index;
+
+        piece.addEventListener("dragstart", e => {
+          e.dataTransfer.setData("index", e.target.dataset.index);
+        });
+
+        piece.addEventListener("dragover", e => e.preventDefault());
+
+        piece.addEventListener("drop", e => {
+          e.preventDefault();
+          const fromIndex = e.dataTransfer.getData("index");
+          const toIndex = e.target.dataset.index;
+
+          const fromPiece = puzzle.children[fromIndex];
+          const toPiece = puzzle.children[toIndex];
+
+          puzzle.insertBefore(fromPiece, toPiece);
+          puzzle.insertBefore(toPiece, puzzle.children[fromIndex]);
+
+          atualizarIndices();
+          verificarPuzzle();
+        });
+
+        puzzle.appendChild(piece);
+      });
+    }
+
+    function atualizarIndices() {
+      [...puzzle.children].forEach((piece, i) => {
+        piece.dataset.index = i;
+      });
+    }
+
+    function verificarPuzzle() {
+      const correto = [...puzzle.children].every((piece, i) => {
+        return parseInt(piece.dataset.correct) === i;
+      });
+      if (correto) {
+        mensagem.textContent = "Eu vejo você!";
+      }
+    }
+
+    reiniciarBtn.addEventListener("click", criarPuzzle);
+    criarPuzzle();
+  </script>
+</body>
+</html>
