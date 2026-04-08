@@ -2,66 +2,49 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Puzzle Alasca!</title>
+  <title>Quebra-Cabeça Alasca</title>
   <style>
     body {
       margin: 0;
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: linear-gradient(135deg, #000000, #1a1a1a); /* fundo preto elegante */
-      color: #FFD700; /* texto dourado */
+      background: linear-gradient(135deg, #000000, #1a1a1a);
+      color: #FFD700;
     }
-
-    h2 {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    #controles {
-      text-align: center;
-      margin: 20px;
-    }
-
+    h2 { text-align: center; margin-top: 20px; }
+    #controles { text-align: center; margin: 20px; }
     button, select {
-      background: rgba(0, 0, 0, 0.4); /* efeito vidro escuro */
-      border: 1px solid rgba(255, 215, 0, 0.6); /* borda dourada */
-      color: #FFD700; /* texto dourado */
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 215, 0, 0.6);
+      color: #FFD700;
       padding: 12px 24px;
       font-size: 16px;
       border-radius: 12px;
-      backdrop-filter: blur(10px); /* efeito glass */
-      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
       cursor: pointer;
       transition: all 0.3s ease;
       margin: 5px;
     }
-
     button:hover, select:hover {
       background: rgba(255, 215, 0, 0.2);
       transform: scale(1.05);
       box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
     }
-
     #referencia {
       display: block;
       margin: 10px auto;
       border: 2px solid #FFD700;
-      max-width: 200px; /* controla tamanho da imagem de referência */
+      max-width: 200px;
       height: auto;
       border-radius: 10px;
       box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
     }
-
     #puzzle {
       display: grid;
       gap: 2px;
       margin: auto;
       border: 2px solid #FFD700;
     }
-
-    .piece {
-      cursor: grab;
-    }
-
+    .piece { cursor: grab; }
     #mensagem {
       text-align: center;
       font-size: 20px;
@@ -71,7 +54,7 @@
   </style>
 </head>
 <body>
-  <h2>Monte seu puzzle!</h2>
+  <h2>Monte o quebra-cabeça!</h2>
   <div id="controles">
     <label for="dificuldade">Dificuldade:</label>
     <select id="dificuldade">
@@ -91,21 +74,18 @@
     const reiniciarBtn = document.getElementById("reiniciar");
     const dificuldadeSelect = document.getElementById("dificuldade");
     const referencia = document.getElementById("referencia");
+    let primeiraSelecionada = null; // para toque
 
     function criarPuzzle() {
       puzzle.innerHTML = "";
       mensagem.textContent = "";
 
       const dificuldade = dificuldadeSelect.value;
-      let tamanho = 100; // tamanho padrão das peças
+      let tamanho = 100;
       let mostrarReferencia = true;
 
-      if (dificuldade === "medio") {
-        mostrarReferencia = false;
-      } else if (dificuldade === "dificil") {
-        mostrarReferencia = false;
-        tamanho = 80; // peças menores
-      }
+      if (dificuldade === "medio") mostrarReferencia = false;
+      else if (dificuldade === "dificil") { mostrarReferencia = false; tamanho = 80; }
 
       referencia.style.display = mostrarReferencia ? "block" : "none";
       referencia.style.maxWidth = mostrarReferencia ? "200px" : "0";
@@ -135,29 +115,44 @@
         piece.dataset.correct = positions.indexOf(pos);
         piece.dataset.index = index;
 
+        // Eventos de arrastar (PC)
         piece.addEventListener("dragstart", e => {
           e.dataTransfer.setData("index", e.target.dataset.index);
         });
-
         piece.addEventListener("dragover", e => e.preventDefault());
-
         piece.addEventListener("drop", e => {
           e.preventDefault();
           const fromIndex = e.dataTransfer.getData("index");
           const toIndex = e.target.dataset.index;
+          trocarPecas(fromIndex, toIndex);
+        });
 
-          const fromPiece = puzzle.children[fromIndex];
-          const toPiece = puzzle.children[toIndex];
-
-          puzzle.insertBefore(fromPiece, toPiece);
-          puzzle.insertBefore(toPiece, puzzle.children[fromIndex]);
-
-          atualizarIndices();
-          verificarPuzzle();
+        // Eventos de toque (Mobile)
+        piece.addEventListener("touchstart", e => {
+          e.preventDefault();
+          if (!primeiraSelecionada) {
+            primeiraSelecionada = piece;
+            piece.style.outline = "2px solid red"; // destaque
+          } else {
+            const fromIndex = primeiraSelecionada.dataset.index;
+            const toIndex = piece.dataset.index;
+            primeiraSelecionada.style.outline = "none";
+            primeiraSelecionada = null;
+            trocarPecas(fromIndex, toIndex);
+          }
         });
 
         puzzle.appendChild(piece);
       });
+    }
+
+    function trocarPecas(fromIndex, toIndex) {
+      const fromPiece = puzzle.children[fromIndex];
+      const toPiece = puzzle.children[toIndex];
+      puzzle.insertBefore(fromPiece, toPiece);
+      puzzle.insertBefore(toPiece, puzzle.children[fromIndex]);
+      atualizarIndices();
+      verificarPuzzle();
     }
 
     function atualizarIndices() {
@@ -170,9 +165,7 @@
       const correto = [...puzzle.children].every((piece, i) => {
         return parseInt(piece.dataset.correct) === i;
       });
-      if (correto) {
-        mensagem.textContent = "Eu vejo você!";
-      }
+      if (correto) mensagem.textContent = "Eu vejo você!";
     }
 
     reiniciarBtn.addEventListener("click", criarPuzzle);
